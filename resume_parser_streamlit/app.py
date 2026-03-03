@@ -1,4 +1,3 @@
-FIRST_KV_PATTERN = re.compile(r"'([^']+)'\s*:\s*'([^']+)'")
+REC_PATTERN = re.compile(r"'Rec'\s*:\s*\{(.*?)\}\s*\}", re.DOTALL)
 
-# Regex pattern
-REC_PATTERN = re.compile(r"\{\s*'Rec'\s*:\s*\{(.*?)\}\s*\}", re.DOTALL)
+FIRST_KV_PATTERN = re.compile(r"'([^']+)'\s*:\s*'([^']+)'")
