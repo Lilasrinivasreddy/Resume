@@ -1,3 +1,144 @@
+🔹 1. Basic Data Understanding
+
+Run this first:
+
+SELECT COUNT(*) FROM `project.dataset.ta_reject_extract_stg`;
+
+👉 You already have ~1B+ records → so don’t scan full table blindly
+
+🔹 2. Check Reject Reason Distribution (MOST IMPORTANT)
+SELECT 
+  reject_reason,
+  COUNT(*) AS cnt
+FROM `project.dataset.ta_reject_extract_stg`
+GROUP BY reject_reason
+ORDER BY cnt DESC;
+
+🎯 This tells:
+
+Top failure reasons
+
+Where most issues are coming from
+
+🔹 3. Entity-wise Analysis
+SELECT 
+  entity,
+  COUNT(*) AS reject_count
+FROM `project.dataset.ta_reject_extract_stg`
+GROUP BY entity
+ORDER BY reject_count DESC;
+
+👉 Helps answer:
+
+Which table/entity has most issues
+
+🔹 4. Missing Mandatory Columns Analysis
+
+From your screenshot:
+👉 "mandatory column cannot empty"
+
+Drill down:
+
+SELECT 
+  entity,
+  reject_reason,
+  COUNT(*) AS cnt
+FROM `project.dataset.ta_reject_extract_stg`
+WHERE reject_reason LIKE '%mandatory%'
+GROUP BY entity, reject_reason
+ORDER BY cnt DESC;
+🔹 5. Null / Empty Text Analysis
+
+Your lead specifically mentioned this ⚠️
+
+SELECT COUNT(*) 
+FROM `project.dataset.ta_reject_extract_stg`
+WHERE text IS NULL;
+
+Also:
+
+SELECT *
+FROM `project.dataset.ta_reject_extract_stg`
+WHERE text IS NULL
+LIMIT 100;
+
+👉 You need to analyze:
+
+Why text is NULL only for some files
+
+🔹 6. Primary Key Issues (CRITICAL)
+SELECT *
+FROM `project.dataset.ta_reject_extract_stg`
+WHERE pk_value IS NULL
+   OR SAFE_CAST(pk_value AS INT64) IS NULL;
+
+👉 Matches what your lead said:
+
+“safe casting… if string → null”
+
+🔹 7. Duplicate PK Check
+SELECT 
+  pk_value,
+  COUNT(*) AS cnt
+FROM `project.dataset.ta_reject_extract_stg`
+GROUP BY pk_value
+HAVING cnt > 1
+ORDER BY cnt DESC;
+🔹 8. File-wise Analysis
+SELECT 
+  file_name,
+  COUNT(*) AS reject_count
+FROM `project.dataset.ta_reject_extract_stg`
+GROUP BY file_name
+ORDER BY reject_count DESC;
+
+👉 Helps:
+
+Identify problematic files
+
+🔹 9. Time-based Analysis
+SELECT 
+  DATE(extracted_ts) AS dt,
+  COUNT(*) AS cnt
+FROM `project.dataset.ta_reject_extract_stg`
+GROUP BY dt
+ORDER BY dt DESC;
+
+👉 Check:
+
+Any spike in failures
+
+🔹 10. Compare with Source (VERY IMPORTANT 🔥)
+
+👉 Your lead emphasized this:
+
+You need to check:
+
+Records expected vs received vs rejected
+
+Example:
+
+-- Expected records (source)
+SELECT COUNT(*) FROM source_table;
+
+-- Loaded records
+SELECT COUNT(*) FROM target_table;
+
+-- Rejected records
+SELECT COUNT(*) FROM ta_reject_extract_stg;
+
+👉 Then validate:
+
+Expected = Loaded + Rejected ?
+🔹 11. Sample Deep Dive (Manual Analysis)
+
+Pick few rows:
+
+SELECT *
+FROM `project.dataset.ta_reject_extract_stg`
+LIMIT 100;
+=============
+
 🚀 🔥 0. Always Use Filter (VERY IMPORTANT for 1B records)
 
 👉 Don’t scan full table — use this everywhere:
